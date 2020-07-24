@@ -1,3 +1,4 @@
+# coding: utf-8
 import os
 import collections
 import json
@@ -44,8 +45,11 @@ async def main():
 
                 date_selector = get_date_selector(x, y)
                 availables = await getAvailableDates(page, date_selector)
-                date_status[date] = availables
-        break
+                date_status[f"{m:02}/{date:02}"] = availables
+
+        sleep(1)
+        await page.click("#searchCalendar > div > div > ul > button.slick-next.slick-arrow")
+        sleep(1)
 
     date_status = json.dumps(
         date_status,
