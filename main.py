@@ -1,4 +1,5 @@
 # coding: utf-8
+import argparse
 import asyncio
 import collections
 import json
@@ -16,7 +17,7 @@ SLACK_WEBHOOK_URL = ""
 NOT_AVAILABLE = "現在、販売していません"
 
 
-async def main():
+async def check_all():
     browser = await launch(headless=False)
     page = await browser.newPage()
     await page.goto(URL)
@@ -50,6 +51,52 @@ async def main():
         sleep(1)
         await page.click("#searchCalendar > div > div > ul > button.slick-next.slick-arrow")
         sleep(1)
+
+    date_status = json.dumps(
+        date_status,
+        sort_keys=True,
+        indent=5,
+        separators=(", ", ": "),
+        ensure_ascii=False,
+    )
+    print(date_status)
+    send_to_slack(date_status)
+
+    await browser.close()
+    return
+
+
+async def check_one(n :int, x :int, y :int):
+    browser = await launch(
+        headless=False,
+        defaultViewport={"width": 1200, "height": 1000},
+    )
+    page = await browser.newPage()
+    await page.goto(URL)
+
+    today_month = moment.now().month
+    today_day = moment.now().day
+
+    for i in range(n):
+        sleep(1)
+        await page.click("#searchCalendar > div > div > ul > button.slick-next.slick-arrow")
+        sleep(1)
+
+    date_status = dict()
+    date_selector = get_date_selector(x, y)
+
+    date_e = await page.J(date_selector + " > span")
+    date = await page.evaluate("e => e.innerHTML", date_e)
+
+    try:
+        date = int(date)
+    except:
+        return
+
+    print("date:", date)
+    date_selector = get_date_selector(x, y)
+    availables = await getAvailableDates(page, date_selector)
+    date_status[f"{today_month+n:02}/{date:02}"] = availables
 
     date_status = json.dumps(
         date_status,
@@ -118,4 +165,17 @@ def send_to_slack(text):
 
 if __name__ == "__main__":
     init()
-    asyncio.get_event_loop().run_until_complete(main())
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("mode", type=str, choices=["all", "one"])
+    parser.add_argument("--n", type=int)
+    parser.add_argument("--x", type=int)
+    parser.add_argument("--y", type=int)
+    args = parser.parse_args()
+
+    if args.mode == "all":
+        asyncio.get_event_loop().run_until_complete(check_all())
+    elif args.mode == "one":
+        asyncio.get_event_loop().run_until_complete(
+            check_one(args.n, args.x, args.y),
+        )
