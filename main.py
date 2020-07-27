@@ -15,6 +15,9 @@ import slackweb
 URL = ""
 SLACK_WEBHOOK_URL = ""
 NOT_AVAILABLE = "現在、販売していません"
+TICKET_ALLDAY = "１デーパスポート"
+TICKET_ELEVEN = "入園時間指定パスポート（午前11時～）"
+TICKET_FOURTEEN = "入園時間指定パスポート（午後2時～）"
 
 
 async def check_all():
@@ -98,6 +101,9 @@ async def check_one(n :int, x :int, y :int):
     availables = await getAvailableDates(page, date_selector)
     date_status[f"{today_month+n:02}/{date:02}"] = availables
 
+    if not availables:
+        return
+
     date_status = json.dumps(
         date_status,
         sort_keys=True,
@@ -108,8 +114,17 @@ async def check_one(n :int, x :int, y :int):
     print(date_status)
     send_to_slack(date_status)
 
-    await browser.close()
-    return
+    if TICKET_ELEVEN in availables:
+        await goto_procedure(page, 2)
+    elif TICKET_ALLDAY in availables:
+        await goto_procedure(page, 1)
+    elif TICKET_FOURTEEN in availables:
+        await goto_procedure(page, 3)
+
+    sleep(60*5)
+
+    # await browser.close()
+    # return
 
 
 async def getAvailableDates(page, date_selector :str) -> list:
@@ -137,6 +152,41 @@ async def getAvailableDates(page, date_selector :str) -> list:
             availables.append(name)
     
     return availables
+
+
+async def goto_procedure(page, n :int):
+    await page.hover(f"#searchResultList > ul > li:nth-child({n}) > div")
+    await page.click(f"#searchResultList > ul > li:nth-child({n}) > div")
+
+    sleep(3)
+
+    # select park
+    land_desc = await page.J("#search-ticket-group > div > section > section.search-select-park-view.section-module.elm-progressive-reveal.is-visible > div > div.search-1day.elm-progressive-reveal.is-visible > div > ul > li:nth-child(1) > span")
+    land_desc_text = await page.evaluate("e => e.innerHTML", land_desc)
+    if land_desc_text != NOT_AVAILABLE:
+        await page.click("#search-ticket-group > div > section > section.search-select-park-view.section-module.elm-progressive-reveal.is-visible > div > div.search-1day.elm-progressive-reveal.is-visible > div > ul > li:nth-child(1) > button")
+    else:
+        await page.click("#search-ticket-group > div > section > section.search-select-park-view.section-module.elm-progressive-reveal.is-visible > div > div.search-1day.elm-progressive-reveal.is-visible > div > ul > li:nth-child(2) > button")
+
+    sleep(1)
+
+    # push add button
+    await page.click("#search-ticket-group > div > section > section.search-ticketnum-view.section-module.elm-progressive-reveal.is-visible > div > dl.select-ticket-num.search-adult > dd > ul > li:nth-child(3) > button")
+    await page.click("#search-ticket-group > div > section > section.search-ticketnum-view.section-module.elm-progressive-reveal.is-visible > div > dl.select-ticket-num.search-adult > dd > ul > li:nth-child(3) > button")
+
+    # push button to go to procedure
+    await page.click("#search-ticket-group > div > section > section.section-module.section-append > div > ul > li > button")
+    
+    sleep(2)
+
+    # # scroll down checks
+    # checker = await page.J("body > div.new-ui-theme > div > div > div")
+    # await page.evaluate("_ => { window.scrollBy(0, 100); }", checker)
+
+    # # push confirm button
+    # await page.click("body > div.new-ui-theme > div > div > ul > li > button")
+
+    return
 
 
 def get_date_selector(x :int, y :int) -> str:
