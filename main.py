@@ -172,7 +172,6 @@ async def goto_procedure(page, n :int):
 
     # push add button
     await page.click("#search-ticket-group > div > section > section.search-ticketnum-view.section-module.elm-progressive-reveal.is-visible > div > dl.select-ticket-num.search-adult > dd > ul > li:nth-child(3) > button")
-    await page.click("#search-ticket-group > div > section > section.search-ticketnum-view.section-module.elm-progressive-reveal.is-visible > div > dl.select-ticket-num.search-adult > dd > ul > li:nth-child(3) > button")
 
     # push button to go to procedure
     await page.click("#search-ticket-group > div > section > section.section-module.section-append > div > ul > li > button")
