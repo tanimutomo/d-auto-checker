@@ -15,9 +15,9 @@ import slackweb
 URL = ""
 SLACK_WEBHOOK_URL = ""
 NOT_AVAILABLE = "現在、販売していません"
-TICKET_ALLDAY = "１デーパスポート"
-TICKET_ELEVEN = "入園時間指定パスポート（午前11時～）"
-TICKET_FOURTEEN = "入園時間指定パスポート（午後2時～）"
+TICKET_ALLDAY = "1デーパスポート 休日用"
+TICKET_ELEVEN = "入園時間指定パスポート（午前10時30分～） 休日用"
+TICKET_FOURTEEN = "入園時間指定パスポート（正午12時～） 休日用"
 
 
 async def check_all():
@@ -80,7 +80,7 @@ async def check_one(n :int, x :int, y :int):
     today_month = moment.now().month
     today_day = moment.now().day
 
-    for i in range(n):
+    for _ in range(n):
         sleep(1)
         await page.click("#searchCalendar > div > div > ul > button.slick-next.slick-arrow")
         sleep(1)
@@ -123,8 +123,8 @@ async def check_one(n :int, x :int, y :int):
 
     sleep(60*5)
 
-    # await browser.close()
-    # return
+    await browser.close()
+    return
 
 
 async def getAvailableDates(page, date_selector :str) -> list:
